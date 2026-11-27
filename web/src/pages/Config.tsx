@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Button,
-  Card,
   TextField,
   Dialog,
   Flex,
@@ -10,12 +9,20 @@ import {
   Spinner,
   Switch,
 } from "@radix-ui/themes";
+import { AnimatePresence, motion } from "motion/react";
 import { addToast, ConfirmModal, useDisclosure } from "@/components";
+import {
+  EASE_SILK,
+  SPRING_SNAPPY,
+  fadeUpItem,
+  staggerContainer,
+} from "@/lib/motion";
 import { authorizedRequest } from "../lib/api";
 import { useLocation } from "wouter";
 import { ROUTE_LOGIN } from "../lib/constants";
 import { EmptyState } from "@/ui/EmptyState";
 import { PageContainer } from "@/ui/PageContainer";
+import { PageHeader } from "@/ui/PageHeader";
 import {
   ArrowUpRight,
   Check,
@@ -24,6 +31,7 @@ import {
   KeyRound,
   Pencil,
   PlugZap,
+  Plus,
   RefreshCw,
   Search,
   Send,
@@ -746,66 +754,113 @@ export default function Config() {
         onConfirm={handleRevokeMcpToken}
       />
 
-      <header className="app-settings-hero">
-        <div className="app-settings-hero-row">
-          <div>
-            <h1>Settings</h1>
-            <p>Shape how DictDeck connects to models and your workspace.</p>
-          </div>
-          <span className="app-settings-hero-status">Private workspace</span>
-        </div>
-      </header>
+      <PageHeader
+        title="Settings"
+        subtitle="Shape how DictDeck connects to models and your workspace."
+        actions={
+          <span className="app-settings-status-pill">Private workspace</span>
+        }
+      />
 
       <div className="app-settings-layout">
         <nav className="app-settings-nav" aria-label="Settings sections">
           <div className="app-settings-nav-label">Manage</div>
-          <button
-            type="button"
-            className={activeTab === "llm" ? "is-active" : ""}
-            onClick={() => setActiveTab("llm")}
-          >
-            <span>LLM providers</span>
-            <small>Models and API connections</small>
-          </button>
-          <button
-            type="button"
-            className={activeTab === "config" ? "is-active" : ""}
-            onClick={() => setActiveTab("config")}
-          >
-            <span>General</span>
-            <small>Workspace-wide settings</small>
-          </button>
+          {(
+            [
+              {
+                id: "llm",
+                label: "LLM providers",
+                desc: "Models and API connections",
+              },
+              {
+                id: "config",
+                label: "General",
+                desc: "Integrations & MCP access",
+              },
+            ] as const
+          ).map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`app-settings-nav-btn${isActive ? " is-active" : ""}`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                {isActive && (
+                  <>
+                    <motion.span
+                      layoutId="settings-nav-pill"
+                      className="app-settings-nav-pill"
+                      transition={SPRING_SNAPPY}
+                      aria-hidden="true"
+                    />
+                    <motion.span
+                      layoutId="settings-nav-bar"
+                      className="app-settings-nav-bar"
+                      transition={SPRING_SNAPPY}
+                      aria-hidden="true"
+                    />
+                  </>
+                )}
+                <span>{item.label}</span>
+                <small>{item.desc}</small>
+              </button>
+            );
+          })}
         </nav>
 
         <section className="app-settings-content">
-          {activeTab === "llm" && (
-            <>
-              <div className="app-settings-section-header">
-                <div>
-                  <div className="app-settings-section-kicker">Connections</div>
-                  <h2>LLM providers</h2>
-                  <p>Choose which model services are available to DictDeck.</p>
+          <AnimatePresence mode="wait" initial={false}>
+            {activeTab === "llm" && (
+              <motion.div
+                key="tab-llm"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.22, ease: EASE_SILK }}
+              >
+                <div className="app-settings-section-header">
+                  <div>
+                    <div className="app-settings-section-kicker">
+                      Connections
+                    </div>
+                    <h2>LLM providers</h2>
+                    <p>
+                      Choose which model services are available to DictDeck.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="app-primary-action"
+                    onClick={openAddModal}
+                  >
+                    <Plus size={15} />
+                    Add provider
+                  </button>
                 </div>
-                <Button
-                  color="gray"
-                  className="app-primary-action"
-                  onClick={openAddModal}
-                >
-                  Add provider
-                </Button>
-              </div>
 
-              {providersLoading ? (
-                <div className="app-settings-inline-state" role="status">
-                  <Spinner size="2" />
-                  <span>Loading providers…</span>
-                </div>
-              ) : providers.length > 0 ? (
-                <div className="app-provider-grid">
-                  {providers.map((p) => (
-                    <Card key={p.name} size="2" className="app-provider-card">
-                      <Flex justify="between" align="center" gap="4">
-                        <Box className="app-provider-details app-provider-identity">
+                {providersLoading ? (
+                  <div className="app-settings-inline-state" role="status">
+                    <Spinner size="2" />
+                    <span>Loading providers…</span>
+                  </div>
+                ) : providers.length > 0 ? (
+                  <motion.div
+                    className="app-provider-grid"
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    {providers.map((p) => (
+                      <motion.article
+                        key={p.name}
+                        variants={fadeUpItem}
+                        whileHover={{ y: -2 }}
+                        transition={{ duration: 0.2, ease: EASE_SILK }}
+                        className="app-provider-card"
+                      >
+                        <div className="app-provider-identity">
                           <span
                             className="app-provider-avatar"
                             aria-hidden="true"
@@ -825,7 +880,7 @@ export default function Config() {
                               {p.base_url && <code>{p.base_url}</code>}
                             </div>
                           </div>
-                        </Box>
+                        </div>
                         <Flex gap="2" className="app-provider-actions shrink-0">
                           <button
                             type="button"
@@ -845,35 +900,39 @@ export default function Config() {
                             <Trash2 aria-hidden="true" />
                           </button>
                         </Flex>
-                      </Flex>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title="No providers connected"
-                  description="Add a model provider to start using assisted lookups."
-                  icon={<PlugZap size={24} />}
-                  actionLabel="Add provider"
-                  onAction={openAddModal}
-                />
-              )}
-            </>
-          )}
+                      </motion.article>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <EmptyState
+                    title="No providers connected"
+                    description="Add a model provider to start using assisted lookups."
+                    icon={<PlugZap size={24} />}
+                    actionLabel="Add provider"
+                    onAction={openAddModal}
+                  />
+                )}
+              </motion.div>
+            )}
 
-          {activeTab === "config" && (
-            <div>
-              <div className="app-settings-section-header">
-                <div>
-                  <div className="app-settings-section-kicker">Workspace</div>
-                  <h2>General settings</h2>
-                  <p>
-                    Keep the shared integrations used by your workspace in one
-                    place.
-                  </p>
+            {activeTab === "config" && (
+              <motion.div
+                key="tab-config"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.22, ease: EASE_SILK }}
+              >
+                <div className="app-settings-section-header">
+                  <div>
+                    <div className="app-settings-section-kicker">Workspace</div>
+                    <h2>General settings</h2>
+                    <p>
+                      Keep the shared integrations used by your workspace in one
+                      place.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="app-settings-form">
                 <form onSubmit={handleGeneralConfigSave}>
                   <div className="app-settings-panel-stack">
                     <section className="app-settings-panel">
@@ -994,91 +1053,80 @@ export default function Config() {
 
                     <div className="app-settings-form-footer">
                       <span>Changes apply to future lookups.</span>
-                      <Button
-                        color="gray"
-                        className="app-primary-action"
-                        type="submit"
-                      >
+                      <button type="submit" className="app-primary-action">
                         Save changes
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </form>
-              </div>
 
-              <section className="app-settings-panel app-settings-mcp-panel">
-                <Flex justify="between" align="start" gap="4" wrap="wrap">
-                  <div className="app-settings-panel-heading">
-                    <span className="app-settings-panel-icon">
-                      <KeyRound size={17} />
-                    </span>
-                    <div>
-                      <h3>MCP access tokens</h3>
-                      <p>
-                        Let connected LLM clients search and manage saved words.
-                        Tokens are shown only once.
-                      </p>
+                <section className="app-settings-panel app-settings-mcp-panel">
+                  <Flex justify="between" align="start" gap="4" wrap="wrap">
+                    <div className="app-settings-panel-heading mb-0">
+                      <span className="app-settings-panel-icon">
+                        <KeyRound size={17} />
+                      </span>
+                      <div>
+                        <h3>MCP access tokens</h3>
+                        <p>
+                          Let connected LLM clients search and manage saved
+                          words. Tokens are shown only once.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <Button
-                    color="gray"
-                    className="app-primary-action"
-                    onClick={() => {
-                      setTokenName("");
-                      setTokenExpiry("90");
-                      setTokenScopes({ read: true, write: true });
-                      setTokenDialogOpen(true);
-                    }}
-                  >
-                    Generate token
-                  </Button>
-                </Flex>
+                    <button
+                      type="button"
+                      className="app-primary-action"
+                      onClick={() => {
+                        setTokenName("");
+                        setTokenExpiry("90");
+                        setTokenScopes({ read: true, write: true });
+                        setTokenDialogOpen(true);
+                      }}
+                    >
+                      Generate token
+                    </button>
+                  </Flex>
 
-                <Flex direction="column" gap="3" mt="5">
-                  {mcpTokens.length === 0 ? (
-                    <div className="app-settings-empty-row">
-                      <KeyRound size={17} />
-                      <span>No MCP tokens have been generated.</span>
-                    </div>
-                  ) : (
-                    mcpTokens.map((token) => (
-                      <Flex
-                        key={token.id}
-                        justify="between"
-                        align="start"
-                        gap="4"
-                        className="border-t border-[var(--app-line)] pt-3"
-                        wrap="wrap"
-                      >
-                        <Box>
-                          <Text weight="bold" as="div">
-                            {token.name}
-                          </Text>
-                          <Text size="1" color="gray" as="div">
-                            {token.scopes.join(", ")} · expires{" "}
-                            {formatTokenDate(token.expires_at)}
-                          </Text>
-                          <Text size="1" color="gray" as="div">
-                            Last used: {formatTokenDate(token.last_used_at)}
-                            {token.revoked_at ? " · Revoked" : ""}
-                          </Text>
-                        </Box>
-                        <Button
-                          size="1"
-                          color="red"
-                          variant="soft"
-                          disabled={!!token.revoked_at}
-                          onClick={() => setRevokeTokenId(token.id)}
-                        >
-                          Revoke
-                        </Button>
-                      </Flex>
-                    ))
-                  )}
-                </Flex>
-              </section>
-            </div>
-          )}
+                  <Flex direction="column" gap="3" mt="4">
+                    {mcpTokens.length === 0 ? (
+                      <div className="app-settings-empty-row">
+                        <KeyRound size={17} />
+                        <span>No MCP tokens have been generated.</span>
+                      </div>
+                    ) : (
+                      mcpTokens.map((token) => (
+                        <div key={token.id} className="app-settings-token-row">
+                          <Box>
+                            <Text weight="bold" as="div">
+                              {token.name}
+                            </Text>
+                            <Text size="1" color="gray" as="div">
+                              {token.scopes.join(", ")} · expires{" "}
+                              {formatTokenDate(token.expires_at)}
+                            </Text>
+                            <Text size="1" color="gray" as="div">
+                              Last used: {formatTokenDate(token.last_used_at)}
+                              {token.revoked_at ? " · Revoked" : ""}
+                            </Text>
+                          </Box>
+                          <Button
+                            size="1"
+                            color="red"
+                            variant="soft"
+                            disabled={!!token.revoked_at}
+                            onClick={() => setRevokeTokenId(token.id)}
+                          >
+                            Revoke
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </Flex>
+                </section>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
       </div>
 
@@ -1113,29 +1161,24 @@ export default function Config() {
                 <Text as="label" size="2" weight="bold">
                   Provider Type
                 </Text>
-                <Box className="relative">
-                  <select
-                    name="provider"
-                    value={selectedProviderType}
-                    onChange={(event) => {
-                      setCodexLogin(null);
-                      setCodexCodeCopied(false);
-                      resetModelDiscovery();
-                      setSelectedProviderType(event.target.value);
-                    }}
-                    className="app-native-select w-full pr-10"
-                  >
-                    <option value="openai">OpenAI</option>
-                    <option value="gemini">Gemini</option>
-                    <option value="vertexai">VertexAI</option>
-                    <option value="workersai">Workers AI</option>
-                    <option value="anthropic">Anthropic</option>
-                    <option value="codex">OpenAI Codex (ChatGPT)</option>
-                  </select>
-                  <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--app-muted)]">
-                    ▾
-                  </span>
-                </Box>
+                <select
+                  name="provider"
+                  value={selectedProviderType}
+                  onChange={(event) => {
+                    setCodexLogin(null);
+                    setCodexCodeCopied(false);
+                    resetModelDiscovery();
+                    setSelectedProviderType(event.target.value);
+                  }}
+                  className="app-native-select w-full"
+                >
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini">Gemini</option>
+                  <option value="vertexai">VertexAI</option>
+                  <option value="workersai">Workers AI</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="codex">OpenAI Codex (ChatGPT)</option>
+                </select>
               </Flex>
               {selectedProviderType === "codex" ? (
                 <Box className="app-codex-login-panel">
@@ -1589,7 +1632,7 @@ export default function Config() {
               <Box
                 mt="4"
                 p="3"
-                className="break-all rounded-md border border-[var(--app-line)] bg-[var(--app-subtle)] font-mono text-sm"
+                className="break-all rounded-md border border-[var(--dd-color-border)] bg-[var(--dd-color-surface-muted)] font-mono text-sm"
               >
                 {createdToken.token}
               </Box>

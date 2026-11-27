@@ -1,4 +1,4 @@
-/* Web adapter: keep the existing app variables as aliases during migration. */
+/* Web adapter: alias app variables to the unified DictDeck token layer. */
 
 :root {
   --app-bg: var(--dd-color-bg);
@@ -14,7 +14,9 @@
   --app-accent: var(--dd-color-accent);
   --app-accent-soft: var(--dd-color-accent-soft);
   --app-accent-strong: var(--dd-color-accent-strong);
-  --app-accent-alt: var(--dd-color-muted);
+  --app-warm: var(--dd-color-warm);
+  --app-warm-soft: var(--dd-color-warm-soft);
+  --app-serif: var(--dd-font-serif);
 }
 
 html,

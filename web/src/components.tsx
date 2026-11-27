@@ -9,8 +9,11 @@ import {
   Text,
   TextArea,
 } from "@radix-ui/themes";
+import { Eye, EyeOff } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { FC, ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { EASE_SILK } from "@/lib/motion";
 
 export function useDisclosure(initialState = false) {
   const [isOpen, setIsOpen] = useState(initialState);
@@ -591,54 +594,78 @@ export const Spoiler: FC<{
   className?: string;
   containerClassName?: string;
   flex?: boolean;
-}> = ({ children, className, containerClassName, flex }) => {
-  const [hide, setHide] = useState(true);
+  revealed?: boolean;
+  onRevealedChange?: (revealed: boolean) => void;
+  revealLabel?: string;
+}> = ({
+  children,
+  className,
+  containerClassName,
+  flex,
+  revealed,
+  onRevealedChange,
+  revealLabel = "Reveal meaning",
+}) => {
+  const [internalRevealed, setInternalRevealed] = useState(false);
+  const isRevealed = revealed !== undefined ? revealed : internalRevealed;
+  const setRevealed = (next: boolean) => {
+    if (onRevealedChange) {
+      onRevealedChange(next);
+    } else {
+      setInternalRevealed(next);
+    }
+  };
+
   return (
     <div
-      className={`app-spoiler relative ${flex ? "flex-1 flex flex-col min-h-0" : ""} ${className || ""}`}
+      className={`app-spoiler ${flex ? "flex min-h-0 flex-1 flex-col" : ""} ${!flex && !isRevealed ? "max-h-[96px]" : ""} ${className || ""}`}
     >
-      <div
-        style={{
-          filter: hide ? "blur(7px)" : "none",
-          opacity: hide ? 0.4 : 1,
-          transform: hide ? "scale(0.985)" : "none",
-          transition:
-            "filter 280ms ease-in-out, opacity 280ms ease-in-out, transform 280ms ease-in-out",
+      <motion.div
+        animate={{
+          opacity: isRevealed ? 1 : 0.22,
+          y: isRevealed ? 0 : 4,
+          filter: isRevealed ? "blur(0px)" : "blur(5px)",
         }}
-        aria-hidden={hide || undefined}
-        className={`${flex ? "flex-1 flex flex-col min-h-0" : ""} ${hide ? "select-none pointer-events-none" : ""}`}
+        transition={{ duration: 0.24, ease: EASE_SILK }}
+        aria-hidden={!isRevealed || undefined}
+        className={`${flex ? "flex min-h-0 flex-1 flex-col" : "min-h-[82px]"} ${!isRevealed ? "pointer-events-none select-none" : ""}`}
       >
         <div
-          className={`p-3 ${flex ? "flex-1 flex flex-col min-h-0" : ""} ${containerClassName || ""}`}
+          className={`p-3.5 ${flex ? "flex min-h-0 flex-1 flex-col" : ""} ${containerClassName || ""}`}
         >
           {children}
         </div>
-      </div>
+      </motion.div>
 
-      <button
-        type="button"
-        tabIndex={hide ? 0 : -1}
-        aria-hidden={!hide || undefined}
-        style={{
-          opacity: hide ? 1 : 0,
-          pointerEvents: hide ? "auto" : "none",
-          transition: "opacity 200ms ease",
-        }}
-        className="app-spoiler-overlay absolute inset-[1px] rounded-[15px] flex items-center justify-center z-10 group"
-        onClick={() => setHide(false)}
-      >
-        <span className="app-spoiler-reveal-btn px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-transform shadow-sm group-hover:scale-105 active:scale-95">
-          Show translation
-        </span>
-      </button>
-
-      {!hide && (
-        <div className="shrink-0 flex justify-end px-2 pb-1">
-          <button
-            onClick={() => setHide(true)}
-            className="app-spoiler-hide-btn px-2 py-1 text-[10px] uppercase tracking-wider font-bold transition-colors"
+      <AnimatePresence initial={false}>
+        {!isRevealed && (
+          <motion.button
+            key="spoiler-veil"
+            type="button"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: EASE_SILK }}
+            className="app-spoiler-veil"
+            onClick={() => setRevealed(true)}
           >
-            Hide
+            <span className="app-spoiler-reveal-pill">
+              <Eye size={13} />
+              <span>{revealLabel}</span>
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {isRevealed && (
+        <div className="app-spoiler-hide-bar shrink-0">
+          <button
+            type="button"
+            onClick={() => setRevealed(false)}
+            className="app-spoiler-hide-btn inline-flex items-center gap-1"
+          >
+            <EyeOff size={12} />
+            <span>Hide</span>
           </button>
         </div>
       )}

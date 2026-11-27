@@ -190,14 +190,26 @@ export const handlers = [
     return HttpResponse.json({});
   }),
 
+  http.post("/config/list", () => {
+    return HttpResponse.json([]);
+  }),
+
+  http.post("/config/save", () => {
+    return HttpResponse.json({});
+  }),
+
+  http.post("/mcp/tokens/list", () => {
+    return HttpResponse.json([]);
+  }),
+
   http.post("/word/query", async ({ request }) => {
     type WordPayload = { word: string };
     const { word } = (await request.json()) as WordPayload;
     // Simulate delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 450));
     return HttpResponse.json({
-      result: `Mock translation for: ${word}\n\nThis is a mock response from the MSW handler.`,
-      reasoning: `Mock reasoning for: ${word}`,
+      result: `### ${word}\n\n**Reading & Nuance**\n- A curated editorial mock entry for **${word}**.\n\n> Example: *"${word}" appears naturally in everyday literary and conversational contexts.*\n\n- **Primary sense**: Core meaning with contextual subtlety.\n- **Usage note**: Often paired with polite or reflective phrasing.`,
+      reasoning: `Analyzed **${word}** across dictionary sources, checking pitch/reading nuances and natural example usage.`,
     });
   }),
 
