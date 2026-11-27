@@ -44,8 +44,9 @@
     "Inter", "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC",
     "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
   --dd-font-serif:
-    "Newsreader", "Songti SC", "Noto Serif SC", "Noto Serif JP",
-    "Hiragino Mincho ProN", Georgia, "Times New Roman", serif;
+    "Newsreader", "Noto Serif JP", "Noto Serif CJK JP", "Hiragino Mincho ProN",
+    "YuMincho", "Noto Serif SC", "Noto Serif CJK SC", "Songti SC", Georgia,
+    "Times New Roman", serif;
   --dd-font-mono:
     "SFMono-Regular", ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
     monospace;

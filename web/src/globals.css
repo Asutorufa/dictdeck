@@ -99,13 +99,18 @@ button:disabled,
   cursor: not-allowed;
 }
 
-/* Align Radix Themes root background & floating surfaces with our tokens */
+/* Align Radix Themes root background & floating surfaces with our tokens.
+   Only paint the opaque page background when data-has-background="true" so
+   Radix Portals (Dialog / Dropdown overlays) stay transparent. */
 .radix-themes {
   --color-background: var(--dd-color-bg);
   --color-panel-solid: var(--dd-color-surface-strong);
   --color-surface: var(--dd-color-bg-raised);
-  background-color: var(--dd-color-bg);
   color: var(--dd-color-text);
+}
+
+.radix-themes:where([data-has-background="true"]) {
+  background-color: var(--dd-color-bg);
 }
 
 .rt-DialogContent {
@@ -122,7 +127,7 @@ button:disabled,
   box-shadow: var(--dd-shadow-md);
 }
 
-.rt-DialogOverlay {
+.rt-BaseDialogOverlay::before {
   backdrop-filter: blur(4px);
 }
 
