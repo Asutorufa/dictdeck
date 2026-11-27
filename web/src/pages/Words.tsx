@@ -70,7 +70,7 @@ export default function Words() {
   const [search, setSearch] = useState("");
   const [selectedWordKey, setSelectedWordKey] = useState<string | null>(null);
   const [mobileReaderOpen, setMobileReaderOpen] = useState(false);
-  const [quizMode, setQuizMode] = useLocalStorage("vocab_quiz_mode", false);
+  const [quizMode, setQuizMode] = useLocalStorage("vocab_hide_explain", true);
   const [detailRevealed, setDetailRevealed] = useState(false);
   const [newWord, setNewWord] = useState<{
     origin?: string;
@@ -262,7 +262,7 @@ export default function Words() {
       <PageContainer>
         <PageHeader
           title="Vocabulary"
-          subtitle="Browse your lexicon on the left and read full explanations effortlessly on the right."
+          subtitle="Recall first on the left, then reveal full explanations when needed on the right."
           actions={
             <button
               type="button"
@@ -341,10 +341,14 @@ export default function Words() {
               className={`app-toolbar-btn${quizMode ? " is-active" : ""}`}
               onClick={() => setQuizMode((v) => !v)}
               aria-pressed={quizMode}
-              title="Toggle self-test mode (veil explanations until revealed)"
+              title={
+                quizMode
+                  ? "Explanations are hidden by default — click to always show"
+                  : "Explanations are visible — click to hide by default for recall"
+              }
             >
               {quizMode ? <EyeOff size={15} /> : <Eye size={15} />}
-              <span>{quizMode ? "Quiz veil: On" : "Quiz veil"}</span>
+              <span>{quizMode ? "Hide meaning" : "Show meaning"}</span>
             </button>
 
             <DropdownMenu.Root modal={false}>
@@ -449,7 +453,9 @@ export default function Words() {
                 >
                   {visibleWords.map(({ word: w }) => {
                     const isSelected = activeWordName === w.word;
-                    const preview = stripPreviewText(w.example || w.explain);
+                    const preview = stripPreviewText(
+                      quizMode ? w.example : w.example || w.explain,
+                    );
                     return (
                       <button
                         key={w.word}

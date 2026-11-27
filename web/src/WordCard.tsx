@@ -205,7 +205,9 @@ export default function WordCard({
           <span className="app-word-section-label">Explanation & notes</span>
           {quizMode && (
             <span className="text-xs text-[var(--dd-color-muted)]">
-              Self-test veil active
+              {revealed
+                ? "Click Hide or press Space to veil"
+                : "Hidden for recall"}
             </span>
           )}
         </div>
@@ -216,6 +218,7 @@ export default function WordCard({
             revealed={revealed}
             onRevealedChange={onRevealedChange}
             revealLabel="Reveal explanation (Space)"
+            revealHint="Recall first, then click or press Space to check"
             className="app-vocab-detail-spoiler"
           >
             <div className="prose">

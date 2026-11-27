@@ -597,6 +597,7 @@ export const Spoiler: FC<{
   revealed?: boolean;
   onRevealedChange?: (revealed: boolean) => void;
   revealLabel?: string;
+  revealHint?: string;
 }> = ({
   children,
   className,
@@ -605,6 +606,7 @@ export const Spoiler: FC<{
   revealed,
   onRevealedChange,
   revealLabel = "Reveal meaning",
+  revealHint,
 }) => {
   const [internalRevealed, setInternalRevealed] = useState(false);
   const isRevealed = revealed !== undefined ? revealed : internalRevealed;
@@ -618,20 +620,32 @@ export const Spoiler: FC<{
 
   return (
     <div
-      className={`app-spoiler ${flex ? "flex min-h-0 flex-1 flex-col" : ""} ${!flex && !isRevealed ? "max-h-[96px]" : ""} ${className || ""}`}
+      className={`app-spoiler ${flex ? "flex min-h-0 flex-1 flex-col" : ""} ${!isRevealed ? (flex ? "max-h-[260px]" : "max-h-[96px]") : ""} ${className || ""}`}
     >
+      {isRevealed && (
+        <div className="app-spoiler-hide-bar shrink-0">
+          <button
+            type="button"
+            onClick={() => setRevealed(false)}
+            className="app-spoiler-hide-btn inline-flex items-center gap-1"
+          >
+            <EyeOff size={12} />
+            <span>Hide</span>
+          </button>
+        </div>
+      )}
+
       <motion.div
         animate={{
-          opacity: isRevealed ? 1 : 0.22,
-          y: isRevealed ? 0 : 4,
-          filter: isRevealed ? "blur(0px)" : "blur(5px)",
+          opacity: isRevealed ? 1 : 0,
+          y: isRevealed ? 0 : 6,
         }}
-        transition={{ duration: 0.24, ease: EASE_SILK }}
+        transition={{ duration: 0.22, ease: EASE_SILK }}
         aria-hidden={!isRevealed || undefined}
-        className={`${flex ? "flex min-h-0 flex-1 flex-col" : "min-h-[82px]"} ${!isRevealed ? "pointer-events-none select-none" : ""}`}
+        className={`${flex ? "flex min-h-0 flex-1 flex-col" : "min-h-[82px]"} ${!isRevealed ? "pointer-events-none select-none overflow-hidden" : ""}`}
       >
         <div
-          className={`p-3.5 ${flex ? "flex min-h-0 flex-1 flex-col" : ""} ${containerClassName || ""}`}
+          className={`px-3.5 pb-3.5 ${isRevealed ? "pt-1" : "pt-3.5"} ${flex ? "flex min-h-0 flex-1 flex-col" : ""} ${containerClassName || ""}`}
         >
           {children}
         </div>
@@ -653,22 +667,12 @@ export const Spoiler: FC<{
               <Eye size={13} />
               <span>{revealLabel}</span>
             </span>
+            {revealHint && (
+              <span className="app-spoiler-hint">{revealHint}</span>
+            )}
           </motion.button>
         )}
       </AnimatePresence>
-
-      {isRevealed && (
-        <div className="app-spoiler-hide-bar shrink-0">
-          <button
-            type="button"
-            onClick={() => setRevealed(false)}
-            className="app-spoiler-hide-btn inline-flex items-center gap-1"
-          >
-            <EyeOff size={12} />
-            <span>Hide</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 };
