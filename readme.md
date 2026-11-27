@@ -24,13 +24,29 @@ cargo build --release
 
 see [telegram bot](#telegram-bot)
 
-https://github.com/user-attachments/assets/19575332-0906-4654-a173-b8c390e0baf4
+![DictDeck Web Demo](./assets/images/editorial/demo.gif)
 
-![screenshot](https://raw.githubusercontent.com/Asutorufa/hujiang_dictionary/refs/heads/rust/assets/images/web.png)
+| Dictionary Desk | Vocabulary Workbench |
+| :---: | :---: |
+| ![Dictionary Lookup](./assets/images/editorial/home-light-result.png) | ![Vocabulary Master-Detail](./assets/images/editorial/vocabulary-light.png) |
+
+| Daily Review Deck | Dark Mode |
+| :---: | :---: |
+| ![Daily Review](./assets/images/editorial/flashcard-light.png) | ![Dark Mode](./assets/images/editorial/home-dark.png) |
 
 ## browser extension
 
 The repository also includes a browser extension for translating selected text from any page.
+
+![DictDeck Extension Demo](./assets/images/editorial/ext-demo.gif)
+
+| Selection Panel (Light) | Selection Panel (Dark) |
+| :---: | :---: |
+| ![Extension Panel Light](./assets/images/editorial/ext-panel-light.png) | ![Extension Panel Dark](./assets/images/editorial/ext-panel-dark.png) |
+
+| Popup (Light) | Popup (Dark) | Options |
+| :---: | :---: | :---: |
+| ![Popup Light](./assets/images/editorial/ext-popup-light.png) | ![Popup Dark](./assets/images/editorial/ext-popup-dark.png) | ![Options](./assets/images/editorial/ext-options-light.png) |
 
 Local build:
 
