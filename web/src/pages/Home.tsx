@@ -14,27 +14,36 @@ import {
   type CustomLLM,
   type PromptMode,
 } from "@/lib/translation";
-import { Button, DropdownMenu, Switch, TextArea } from "@radix-ui/themes";
+import {
+  EASE_SILK,
+  SPRING_GENTLE,
+  fadeUpItem,
+  staggerContainer,
+} from "@/lib/motion";
+import { DropdownMenu, Switch, TextArea } from "@radix-ui/themes";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalStorage } from "usehooks-ts";
-import { ROUTE_FLASHCARD } from "@/lib/constants";
 import {
+  addToast,
   listModel as listModels,
   Markdown,
   SaveWordModal,
 } from "../components";
 import {
+  ArrowLeftRight,
   ArrowUp,
+  BookmarkPlus,
+  BookOpen,
+  Brain,
+  Check,
   ChevronDown,
+  Copy,
   Globe2,
-  Layers3,
-  PencilLine,
-  Plus,
-  Search,
+  RotateCcw,
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
-import { useLocation } from "wouter";
 
 async function fetchTranslation(
   opts: {
@@ -126,14 +135,6 @@ const languageMap = Object.fromEntries(
 );
 
 const TRANSLATION_SOURCE_KEYS = new Set(["google", "googlev1", "m2m100_1_2b"]);
-const SOURCE_TAGS: Partial<
-  Record<(typeof BUILTIN_METHODS)[number]["value"], string>
-> = {
-  jc: "hujiang",
-  cj: "hujiang",
-  kr: "hujiang",
-  en: "hujiang",
-};
 
 const translationSources = BUILTIN_METHODS.filter((method) =>
   TRANSLATION_SOURCE_KEYS.has(method.value),
@@ -147,7 +148,6 @@ const dictSources = BUILTIN_METHODS.filter(
 ).map((method) => ({
   key: method.value,
   name: method.label,
-  tag: SOURCE_TAGS[method.value],
 }));
 
 const translationMap = Object.fromEntries(
@@ -157,6 +157,27 @@ const translationMap = Object.fromEntries(
 const promptModeLabels = Object.fromEntries(
   PROMPT_MODES.map((mode) => [mode.value, mode.label]),
 ) as Record<PromptMode, string>;
+
+const SUGGESTIONS = [
+  {
+    tag: "Japanese idiom",
+    word: "一期一会",
+    desc: "Explore nuance, kanji readings, and context",
+    method: undefined as string | undefined,
+  },
+  {
+    tag: "English lexicon",
+    word: "serendipity",
+    desc: "Meaning, etymology, and natural usage",
+    method: undefined as string | undefined,
+  },
+  {
+    tag: "Natural phrasing",
+    word: "How do I say thank you naturally in Japanese?",
+    desc: "Translate a phrase with tone variations",
+    method: "google",
+  },
+];
 
 function resolveCustomModel(
   value: string,
@@ -181,12 +202,15 @@ function resolveCustomModel(
 }
 
 export default function Home() {
-  const [, setLocation] = useLocation();
   const [selected, setSelected] = useLocalStorage(
     "translate_type",
     DEFAULT_METHOD,
   );
   const [query, setQuery] = useLocalStorage("query", "");
+  const [submittedQuery, setSubmittedQuery] = useLocalStorage(
+    "submitted_query",
+    "",
+  );
   const [instruction, setInstruction] = useLocalStorage("instruction", "");
   const [googleSearch, setGoogleSearch] = useLocalStorage(
     "google_search",
@@ -210,6 +234,8 @@ export default function Home() {
     "default",
   );
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [thinkingOpen, setThinkingOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useLocalStorage(
     "home_advanced_open",
     false,
@@ -266,10 +292,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const handleFocusSearch = () => {
+      queryInputRef.current?.focus();
+      queryInputRef.current?.select();
+    };
+    window.addEventListener("dictdeck:focus-search", handleFocusSearch);
+    return () =>
+      window.removeEventListener("dictdeck:focus-search", handleFocusSearch);
+  }, []);
+
+  useEffect(() => {
     const textarea = queryInputRef.current;
     if (!textarea) return;
     textarea.style.height = "0px";
-    textarea.style.height = `${Math.max(120, textarea.scrollHeight)}px`;
+    textarea.style.height = `${Math.min(240, Math.max(62, textarea.scrollHeight))}px`;
   }, [query]);
 
   useEffect(() => {
@@ -304,116 +340,123 @@ export default function Home() {
     }
   }, [customModels, selected, setSelected]);
 
-  const doQueryWord = useCallback(async () => {
-    if (!query) return;
-    const customLLM = resolveCustomModel(selected, customModels);
-    const method = customLLM ? customMethodValue(customLLM) : selected;
+  const doQueryWord = useCallback(
+    async (overrideQuery?: string, overrideMethod?: string) => {
+      const targetQuery = (overrideQuery ?? query).trim();
+      if (!targetQuery) return;
+      const activeSelected = overrideMethod ?? selected;
+      const customLLM = resolveCustomModel(activeSelected, customModels);
+      const method = customLLM ? customMethodValue(customLLM) : activeSelected;
 
-    setLoading(true);
+      setSubmittedQuery(targetQuery);
+      setLoading(true);
+      setThinkingOpen(false);
 
-    if (stream && customLLM) {
-      pendingStreamRef.current = { result: "", reasoning: "" };
-      persistResult({ result: "" });
-      try {
-        const resp = await authorizedRequest("/word/query_stream", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(
-            buildTranslationQueryBody({
-              method,
-              text: query,
-              instruction: instruction.length > 0 ? instruction : undefined,
-              promptMode,
-              googleSearch,
-              searchEngine: searchEngine ? searchEngine : undefined,
-              srcLang: srcLang ? srcLang : undefined,
-              dstLang: dstLang ? dstLang : undefined,
-            }),
-          ),
-        });
+      if (stream && customLLM) {
+        pendingStreamRef.current = { result: "", reasoning: "" };
+        persistResult({ result: "" });
+        try {
+          const resp = await authorizedRequest("/word/query_stream", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(
+              buildTranslationQueryBody({
+                method,
+                text: targetQuery,
+                instruction: instruction.length > 0 ? instruction : undefined,
+                promptMode,
+                googleSearch,
+                searchEngine: searchEngine ? searchEngine : undefined,
+                srcLang: srcLang ? srcLang : undefined,
+                dstLang: dstLang ? dstLang : undefined,
+              }),
+            ),
+          });
 
-        if (!resp.ok) {
-          persistResult({ result: `(${resp.status}) ${await resp.text()}` });
-          setLoading(false);
-          return;
-        }
-
-        await streamRequest<{ result: string; reasoning?: string }>(
-          resp,
-          (data) => {
-            pendingStreamRef.current = {
-              result: pendingStreamRef.current.result + (data.result || ""),
-              reasoning:
-                pendingStreamRef.current.reasoning + (data.reasoning || ""),
-            };
-
-            if (streamFrameRef.current !== null) return;
-
-            streamFrameRef.current = window.requestAnimationFrame(() => {
-              streamFrameRef.current = null;
-              const pending = pendingStreamRef.current;
-              pendingStreamRef.current = { result: "", reasoning: "" };
-
-              persistResult(
-                (prev) => ({
-                  result: prev.result + pending.result,
-                  reasoning: (prev.reasoning || "") + pending.reasoning,
-                }),
-                { debounce: true },
-              );
+          if (!resp.ok) {
+            persistResult({
+              result: `(${resp.status}) ${await resp.text()}`,
             });
+            setLoading(false);
+            return;
+          }
+
+          await streamRequest<{ result: string; reasoning?: string }>(
+            resp,
+            (data) => {
+              pendingStreamRef.current = {
+                result: pendingStreamRef.current.result + (data.result || ""),
+                reasoning:
+                  pendingStreamRef.current.reasoning + (data.reasoning || ""),
+              };
+
+              if (streamFrameRef.current !== null) return;
+
+              streamFrameRef.current = window.requestAnimationFrame(() => {
+                streamFrameRef.current = null;
+                const pending = pendingStreamRef.current;
+                pendingStreamRef.current = { result: "", reasoning: "" };
+
+                persistResult(
+                  (prev) => ({
+                    result: prev.result + pending.result,
+                    reasoning: (prev.reasoning || "") + pending.reasoning,
+                  }),
+                  { debounce: true },
+                );
+              });
+            },
+          );
+        } catch (error) {
+          persistResult({ result: String(error) });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        await fetchTranslation(
+          {
+            query: targetQuery,
+            srcLang,
+            dstLang,
+            googleSearch,
+            searchEngine,
+            instruction,
+            promptMode,
+            method,
+          },
+          (data, error) => {
+            if (error) {
+              persistResult({ result: error });
+            } else if (data) {
+              persistResult(data);
+            } else {
+              persistResult({ result: "NOT FOUND" });
+            }
+            setLoading(false);
           },
         );
-      } catch (error) {
-        persistResult({ result: String(error) });
-      } finally {
-        setLoading(false);
       }
-    } else {
-      await fetchTranslation(
-        {
-          query: query,
-          srcLang: srcLang,
-          dstLang: dstLang,
-          googleSearch,
-          searchEngine,
-          instruction: instruction,
-          promptMode,
-          method,
-        },
-        (data, error) => {
-          console.log(data);
-          if (error) {
-            persistResult({ result: error });
-          } else if (data) {
-            persistResult(data);
-          } else {
-            persistResult({ result: "NOT FOUND" });
-          }
-          setLoading(false);
-        },
-      );
-    }
-  }, [
-    query,
-    srcLang,
-    dstLang,
-    googleSearch,
-    searchEngine,
-    instruction,
-    promptMode,
-    selected,
-    customModels,
-    persistResult,
-    setLoading,
-    stream,
-  ]);
+    },
+    [
+      query,
+      srcLang,
+      dstLang,
+      googleSearch,
+      searchEngine,
+      instruction,
+      promptMode,
+      selected,
+      customModels,
+      persistResult,
+      setSubmittedQuery,
+      stream,
+    ],
+  );
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
-      // Windows/Linux: Ctrl, macOS: Meta(Command)
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case "s":
@@ -430,221 +473,271 @@ export default function Home() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [setOpen, doQueryWord]);
+  }, [doQueryWord]);
+
+  const handleCopyResult = async () => {
+    if (!liveResult.result) return;
+    try {
+      await navigator.clipboard?.writeText(liveResult.result);
+      setCopied(true);
+      addToast({ title: "Copied to clipboard", color: "success" });
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      addToast({ title: "Could not copy result", color: "warning" });
+    }
+  };
+
+  const handleReset = () => {
+    setQuery("");
+    setSubmittedQuery("");
+    persistResult({ result: "", reasoning: "" });
+    setThinkingOpen(false);
+    window.setTimeout(() => queryInputRef.current?.focus(), 40);
+  };
+
+  const handleSwapLanguages = () => {
+    if (!srcLang) return;
+    const prevSrc = srcLang;
+    setSrcLang(dstLang);
+    setDstLang(prevSrc);
+  };
 
   const selectedCustomModel = resolveCustomModel(selected, customModels);
   const selectedLabel = selectedCustomModel
     ? selectedCustomModel.model
     : translationMap[selected] || methodLabel(selected);
   const hasCustomSelection = Boolean(selectedCustomModel);
+  const hasOutput = Boolean(
+    loading || liveResult.result || liveResult.reasoning,
+  );
+  const displayHeadword = submittedQuery || query || "Lookup result";
 
   return (
-    <div className="app-home-page">
+    <div className={`app-home-page${hasOutput ? "" : " is-idle"}`}>
       <SaveWordModal
         open={open}
         onChange={(p) => setOpen(p)}
-        word={query}
+        word={submittedQuery || query}
         explain={liveResult.result}
         type={0}
       />
-      <section className="app-home-stage">
-        <div className="app-home-kicker">
-          <Sparkles size={15} /> Hujiang dictionary
-        </div>
-        <h1>What can I help you find?</h1>
-        <p className="app-home-subtitle">
-          Translate, understand, and save language in one place.
-        </p>
 
-        <div className="app-composer">
-          <div className="app-composer-input-row">
-            <button
-              type="button"
-              className="app-composer-add"
-              aria-label="Add context"
+      <div className="app-home-inner">
+        <AnimatePresence initial={false}>
+          {!hasOutput && (
+            <motion.header
+              key="home-hero"
+              className="app-home-hero"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.3, ease: EASE_SILK }}
             >
-              <Plus size={21} />
-            </button>
-            <TextArea
-              ref={queryInputRef}
-              value={query}
-              placeholder="Ask DictDeck anything about a word or phrase"
-              variant="soft"
-              className="app-composer-textarea"
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
+              <div className="app-home-badge">
+                <BookOpen size={13} />
+                <span>Personal Lexicon & AI Translator</span>
+              </div>
+              <h1>
+                Look up, understand, <em>remember.</em>
+              </h1>
+              <p className="app-home-subtitle">
+                A quiet desk for dictionaries, nuanced translations, and lasting
+                vocabulary.
+              </p>
+            </motion.header>
+          )}
+        </AnimatePresence>
 
-          <div className="app-composer-footer">
-            <div className="app-composer-controls">
-              <DropdownMenu.Root modal={false}>
-                <DropdownMenu.Trigger>
-                  <Button variant="ghost" className="app-composer-control">
-                    <Sparkles size={16} />
-                    <span>{selectedLabel || "Select source"}</span>
-                    <ChevronDown size={14} />
-                  </Button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Label>Translation source</DropdownMenu.Label>
-                  {translationSources.map((source) => (
-                    <DropdownMenu.Item
-                      key={source.key}
-                      onSelect={() => setSelected(source.key)}
-                    >
-                      {source.name}
-                    </DropdownMenu.Item>
-                  ))}
-                  <DropdownMenu.Separator />
-                  {dictSources.map((source) => (
-                    <DropdownMenu.Item
-                      key={source.key}
-                      onSelect={() => setSelected(source.key)}
-                    >
-                      {source.name}
-                    </DropdownMenu.Item>
-                  ))}
-                  {Object.keys(customModels || {}).length > 0 && (
+        <motion.div layout="position" transition={SPRING_GENTLE}>
+          <div className="app-composer">
+            <div className="app-composer-input-wrap">
+              <textarea
+                ref={queryInputRef}
+                value={query}
+                rows={2}
+                placeholder="Type a word, idiom, or sentence to look up…"
+                className="app-composer-textarea"
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="app-composer-footer">
+              <div className="app-composer-controls">
+                <DropdownMenu.Root modal={false}>
+                  <DropdownMenu.Trigger>
+                    <button type="button" className="app-composer-chip">
+                      <Sparkles
+                        size={14}
+                        className="shrink-0 text-[var(--dd-color-accent)]"
+                      />
+                      <span className="app-composer-chip-label">
+                        {selectedLabel || "Select source"}
+                      </span>
+                      <ChevronDown size={13} className="shrink-0 opacity-60" />
+                    </button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Label>Translation</DropdownMenu.Label>
+                    {translationSources.map((source) => (
+                      <DropdownMenu.Item
+                        key={source.key}
+                        onSelect={() => setSelected(source.key)}
+                      >
+                        {source.name}
+                      </DropdownMenu.Item>
+                    ))}
                     <DropdownMenu.Separator />
-                  )}
-                  {Object.keys(customModels || {}).map((key) => (
-                    <DropdownMenu.Item
-                      key={key}
-                      onSelect={() => setSelected(key)}
-                    >
-                      {customModels[key].model}
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
+                    <DropdownMenu.Label>Dictionaries</DropdownMenu.Label>
+                    {dictSources.map((source) => (
+                      <DropdownMenu.Item
+                        key={source.key}
+                        onSelect={() => setSelected(source.key)}
+                      >
+                        {source.name}
+                      </DropdownMenu.Item>
+                    ))}
+                    {Object.keys(customModels || {}).length > 0 && (
+                      <>
+                        <DropdownMenu.Separator />
+                        <DropdownMenu.Label>AI Models</DropdownMenu.Label>
+                      </>
+                    )}
+                    {Object.keys(customModels || {}).map((key) => (
+                      <DropdownMenu.Item
+                        key={key}
+                        onSelect={() => setSelected(key)}
+                      >
+                        {customModels[key].model}
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
 
-              {showSelectLang(selected) && (
-                <>
-                  <DropdownMenu.Root modal={false}>
-                    <DropdownMenu.Trigger>
-                      <Button
-                        variant="ghost"
-                        className="app-composer-control app-composer-language"
-                      >
-                        <span>{languageMap[srcLang]?.flag || "🌐"}</span>
-                        <span>{languageMap[srcLang]?.name || "Auto"}</span>
-                      </Button>
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content>
-                      {languages.map((lang) => (
-                        <DropdownMenu.Item
-                          key={lang.key}
-                          onSelect={() => setSrcLang(lang.key)}
-                        >
-                          {lang.flag} {lang.name}
-                        </DropdownMenu.Item>
-                      ))}
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Root>
-                  <DropdownMenu.Root modal={false}>
-                    <DropdownMenu.Trigger>
-                      <Button
-                        variant="ghost"
-                        className="app-composer-control app-composer-language"
-                      >
-                        <span>{languageMap[dstLang]?.flag || "🌐"}</span>
-                        <span>{languageMap[dstLang]?.name || "Auto"}</span>
-                      </Button>
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content>
-                      {languages
-                        .filter((lang) => lang.key !== "")
-                        .map((lang) => (
+                {showSelectLang(selected) && (
+                  <div className="app-composer-lang-group">
+                    <DropdownMenu.Root modal={false}>
+                      <DropdownMenu.Trigger>
+                        <button type="button" className="app-composer-lang-btn">
+                          <span>{languageMap[srcLang]?.flag || "🌐"}</span>
+                          <span className="app-composer-chip-label">
+                            {languageMap[srcLang]?.name || "Auto"}
+                          </span>
+                        </button>
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content>
+                        {languages.map((lang) => (
                           <DropdownMenu.Item
                             key={lang.key}
-                            onSelect={() => setDstLang(lang.key)}
+                            onSelect={() => setSrcLang(lang.key)}
                           >
                             {lang.flag} {lang.name}
                           </DropdownMenu.Item>
                         ))}
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Root>
-                </>
-              )}
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
 
-              {hasCustomSelection && (
+                    <button
+                      type="button"
+                      className="app-composer-swap"
+                      onClick={handleSwapLanguages}
+                      disabled={!srcLang}
+                      aria-label="Swap languages"
+                      title={
+                        srcLang
+                          ? "Swap source and target languages"
+                          : "Choose a source language to swap"
+                      }
+                    >
+                      <ArrowLeftRight size={13} />
+                    </button>
+
+                    <DropdownMenu.Root modal={false}>
+                      <DropdownMenu.Trigger>
+                        <button type="button" className="app-composer-lang-btn">
+                          <span>{languageMap[dstLang]?.flag || "🌐"}</span>
+                          <span className="app-composer-chip-label">
+                            {languageMap[dstLang]?.name || "Auto"}
+                          </span>
+                        </button>
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content>
+                        {languages
+                          .filter((lang) => lang.key !== "")
+                          .map((lang) => (
+                            <DropdownMenu.Item
+                              key={lang.key}
+                              onSelect={() => setDstLang(lang.key)}
+                            >
+                              {lang.flag} {lang.name}
+                            </DropdownMenu.Item>
+                          ))}
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                  </div>
+                )}
+
+                {hasCustomSelection && (
+                  <button
+                    type="button"
+                    className={`app-composer-icon-btn${showAdvanced ? " is-active" : ""}`}
+                    onClick={() => setShowAdvanced((value) => !value)}
+                    aria-label="Toggle advanced options"
+                    title="Advanced options"
+                  >
+                    <SlidersHorizontal size={15} />
+                  </button>
+                )}
+              </div>
+
+              <div className="app-composer-submit-group">
+                <kbd className="app-kbd">⌘↵</kbd>
                 <button
                   type="button"
-                  className={`app-composer-control app-composer-icon-control${showAdvanced ? " is-active" : ""}`}
-                  onClick={() => setShowAdvanced((value) => !value)}
-                  aria-label="Toggle advanced options"
+                  className="app-composer-submit"
+                  onClick={() => void doQueryWord()}
+                  disabled={loading || !query.trim()}
+                  aria-label="Translate"
                 >
-                  <SlidersHorizontal size={16} />
+                  {loading ? (
+                    <span className="app-loading-dot" />
+                  ) : (
+                    <>
+                      <span>Look up</span>
+                      <ArrowUp size={15} strokeWidth={2.5} />
+                    </>
+                  )}
                 </button>
-              )}
-            </div>
-
-            <div className="app-composer-submit-group">
-              <span className="app-composer-shortcut">⌘ Enter</span>
-              <button
-                type="button"
-                className="app-composer-submit"
-                onClick={doQueryWord}
-                disabled={loading || !query.trim()}
-                aria-label="Translate"
-              >
-                {loading ? (
-                  <span className="app-loading-dot" />
-                ) : (
-                  <ArrowUp size={19} strokeWidth={2.5} />
-                )}
-              </button>
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="app-quick-actions" aria-label="Quick actions">
-          <button type="button" onClick={() => queryInputRef.current?.focus()}>
-            <Search size={17} />
-            Dictionary lookup
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelected("google");
-              queryInputRef.current?.focus();
-            }}
-          >
-            <Globe2 size={17} />
-            Translate a sentence
-          </button>
-          <button type="button" onClick={() => setOpen(true)}>
-            <PencilLine size={17} />
-            Save a word
-          </button>
-          <button type="button" onClick={() => setLocation(ROUTE_FLASHCARD)}>
-            <Layers3 size={17} />
-            Review vocabulary
-          </button>
-        </div>
-      </section>
-
-      {hasCustomSelection && (
-        <div
-          className={`app-collapse${showAdvanced ? " is-open" : ""}`}
-          inert={!showAdvanced}
-          aria-hidden={!showAdvanced}
-        >
-          <div className="app-collapse-inner">
-            <section className="app-advanced-panel">
+        <AnimatePresence initial={false}>
+          {hasCustomSelection && showAdvanced && (
+            <motion.section
+              key="advanced-panel"
+              className="app-advanced-panel"
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: "auto", marginTop: 14 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              transition={{ duration: 0.24, ease: EASE_SILK }}
+            >
               <div className="app-advanced-heading">
                 <div>
                   <strong>Advanced options</strong>
                   <span>
-                    Fine-tune this lookup without leaving the composer.
+                    Fine-tune grounding, streaming, and prompt guidance.
                   </span>
                 </div>
-                <button type="button" onClick={() => setShowAdvanced(false)}>
-                  Close
+                <button
+                  type="button"
+                  className="app-lexicon-btn"
+                  onClick={() => setShowAdvanced(false)}
+                >
+                  Done
                 </button>
               </div>
               <div className="app-advanced-grid">
@@ -653,17 +746,17 @@ export default function Home() {
                     <Switch
                       checked={googleSearch}
                       onCheckedChange={setGoogleSearch}
-                    />{" "}
-                    Web search
+                    />
+                    Web search grounding
                   </span>
-                  <small>Use live sources when translating.</small>
+                  <small>Pull fresh web references while translating.</small>
                 </label>
                 <label className="app-toggle-row">
                   <span>
-                    <Switch checked={stream} onCheckedChange={setStream} />{" "}
+                    <Switch checked={stream} onCheckedChange={setStream} />
                     Stream response
                   </span>
-                  <small>Show the answer as it arrives.</small>
+                  <small>Reveal tokens live as the model responds.</small>
                 </label>
                 {googleSearch && (
                   <label className="app-field-stack">
@@ -685,9 +778,13 @@ export default function Home() {
                   <span>Prompt mode</span>
                   <DropdownMenu.Root modal={false}>
                     <DropdownMenu.Trigger>
-                      <Button variant="ghost" className="app-advanced-select">
-                        {promptModeLabels[promptMode]} <ChevronDown size={14} />
-                      </Button>
+                      <button
+                        type="button"
+                        className="app-composer-chip w-full justify-between"
+                      >
+                        <span>{promptModeLabels[promptMode]}</span>
+                        <ChevronDown size={14} />
+                      </button>
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content>
                       {PROMPT_MODES.map((mode) => (
@@ -706,114 +803,172 @@ export default function Home() {
                     <span>Custom instruction</span>
                     <TextArea
                       value={instruction}
-                      placeholder="Translate to natural spoken Japanese..."
+                      placeholder="e.g. Explain nuance, pitch accent, and 2 natural examples…"
                       onChange={(event) => setInstruction(event.target.value)}
                     />
                   </label>
                 )}
               </div>
-            </section>
-          </div>
-        </div>
-      )}
-
-      {(liveResult.reasoning || liveResult.result) && (
-        <section className="app-home-thread">
-          {query && (
-            <div className="app-thread-user">
-              <div className="app-thread-avatar app-thread-avatar-user">
-                You
-              </div>
-              <div className="app-thread-user-bubble">{query}</div>
-            </div>
+            </motion.section>
           )}
-          {liveResult.reasoning && (
-            <div className="app-thread-message app-thread-reasoning">
-              <div className="app-thread-avatar">D</div>
-              <div className="app-thread-message-body">
-                <div className="app-thread-label">Thinking process</div>
-                <div className="prose">
-                  <Markdown>{liveResult.reasoning}</Markdown>
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {hasOutput ? (
+            <motion.article
+              key="lexicon-result"
+              className="app-lexicon-card"
+              initial={{ opacity: 0, y: 16, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.99 }}
+              transition={{ duration: 0.32, ease: EASE_SILK }}
+            >
+              <header className="app-lexicon-header">
+                <div className="app-lexicon-headword-wrap">
+                  <div className="app-lexicon-meta">
+                    <span className="app-lexicon-source">
+                      {loading && <span className="app-lexicon-live-dot" />}
+                      {selectedLabel}
+                    </span>
+                  </div>
+                  <h2 className="app-lexicon-headword">{displayHeadword}</h2>
                 </div>
-              </div>
-            </div>
-          )}
-          <div className="app-thread-message">
-            <div className="app-thread-avatar">
-              <img src="/dictdeck.svg" alt="" aria-hidden="true" />
-            </div>
-            <div className="app-thread-message-body">
-              <div className="app-thread-label">DictDeck</div>
-              <div className="prose">
-                <Markdown>
-                  {liveResult.result ||
-                    (loading ? "Looking that up…" : "No result found.")}
-                </Markdown>
-              </div>
-              <div className="app-thread-actions">
-                <button type="button" onClick={() => setOpen(true)}>
-                  Save to vocabulary
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigator.clipboard?.writeText(liveResult.result)
-                  }
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
-      {!liveResult.result && !liveResult.reasoning && (
-        <section className="app-home-suggestions">
-          <div className="app-home-suggestion-heading">Try one of these</div>
-          <div className="app-home-suggestion-grid">
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("一期一会");
-                queryInputRef.current?.focus();
-              }}
+                <div className="app-lexicon-actions">
+                  <button
+                    type="button"
+                    className="app-lexicon-btn app-lexicon-btn--accent"
+                    onClick={() => setOpen(true)}
+                  >
+                    <BookmarkPlus size={15} />
+                    <span>Save</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="app-lexicon-btn"
+                    onClick={() => void handleCopyResult()}
+                    disabled={!liveResult.result}
+                  >
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copied ? "Copied" : "Copy"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="app-lexicon-btn app-lexicon-btn--icon"
+                    onClick={handleReset}
+                    aria-label="Clear result"
+                    title="Clear result"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                </div>
+              </header>
+
+              {liveResult.reasoning && (
+                <div className="app-thinking-box">
+                  <button
+                    type="button"
+                    className="app-thinking-toggle"
+                    onClick={() => setThinkingOpen((openState) => !openState)}
+                    aria-expanded={thinkingOpen}
+                  >
+                    <span className="app-thinking-toggle-left">
+                      <Brain size={14} />
+                      <span>Thinking notes</span>
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      style={{
+                        transform: thinkingOpen
+                          ? "rotate(180deg)"
+                          : "rotate(0deg)",
+                        transition: "transform 180ms ease",
+                      }}
+                    />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {thinkingOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.22, ease: EASE_SILK }}
+                        style={{ overflow: "hidden" }}
+                      >
+                        <div className="app-thinking-body prose">
+                          <Markdown>{liveResult.reasoning}</Markdown>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              <div className="app-lexicon-body">
+                {loading && !liveResult.result ? (
+                  <div
+                    className="app-lexicon-skeleton"
+                    role="status"
+                    aria-label="Looking up entry"
+                  >
+                    <span className="skeleton-line skeleton-line--title" />
+                    <span className="skeleton-line" />
+                    <span className="skeleton-line" />
+                    <span className="skeleton-line skeleton-line--short" />
+                  </div>
+                ) : (
+                  <div className="prose">
+                    <Markdown>
+                      {liveResult.result || "No result found."}
+                    </Markdown>
+                    {loading && (
+                      <span className="app-stream-cursor" aria-hidden="true" />
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.article>
+          ) : (
+            <motion.section
+              key="home-suggestions"
+              className="app-home-suggestions"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="show"
+              exit={{ opacity: 0, y: 8 }}
             >
-              <span className="app-suggestion-icon">
-                <Search size={17} />
-              </span>
-              <span>
-                <strong>一期一会</strong>
-                <small>Look up a Japanese phrase</small>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("How do I say thank you naturally?");
-                queryInputRef.current?.focus();
-              }}
-            >
-              <span className="app-suggestion-icon">
-                <Globe2 size={17} />
-              </span>
-              <span>
-                <strong>Natural translation</strong>
-                <small>Ask for a better way to say it</small>
-              </span>
-            </button>
-            <button type="button" onClick={() => setLocation(ROUTE_FLASHCARD)}>
-              <span className="app-suggestion-icon">
-                <Sparkles size={17} />
-              </span>
-              <span>
-                <strong>Start a review</strong>
-                <small>Practice saved vocabulary</small>
-              </span>
-            </button>
-          </div>
-        </section>
-      )}
+              <div className="app-home-suggestion-heading">
+                <span>Try a lookup</span>
+                <span className="inline-flex items-center gap-1.5 text-[11.5px] font-normal">
+                  <Globe2 size={12} /> Press <kbd className="app-kbd">⌘S</kbd>{" "}
+                  anytime to save
+                </span>
+              </div>
+              <div className="app-home-suggestion-grid">
+                {SUGGESTIONS.map((item) => (
+                  <motion.button
+                    key={item.word}
+                    type="button"
+                    variants={fadeUpItem}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.985 }}
+                    className="app-suggestion-card"
+                    onClick={() => {
+                      if (item.method) setSelected(item.method);
+                      setQuery(item.word);
+                      void doQueryWord(item.word, item.method);
+                    }}
+                  >
+                    <span className="app-suggestion-tag">{item.tag}</span>
+                    <span className="app-suggestion-word">{item.word}</span>
+                    <span className="app-suggestion-desc">{item.desc}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

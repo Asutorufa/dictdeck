@@ -630,12 +630,9 @@ impl WorkerState {
             exp: expiration,
         };
 
-        encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(self.auth_secret.as_bytes()),
-        )
-        .map_err(|e| e.to_string())
+        let encoding_key =
+            EncodingKey::from_secret(self.auth_secret.as_bytes()).map_err(|e| e.to_string())?;
+        encode(&Header::default(), &claims, &encoding_key).map_err(|e| e.to_string())
     }
 
     pub fn check_auth(&self, auth_header: Option<&str>) -> Result<(), String> {
@@ -650,11 +647,9 @@ impl WorkerState {
         };
 
         let validation = Validation::default();
-        match decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(self.auth_secret.as_bytes()),
-            &validation,
-        ) {
+        let decoding_key = DecodingKey::from_secret(self.auth_secret.as_bytes())
+            .map_err(|_| "Invalid or expired token".to_string())?;
+        match decode::<Claims>(token, &decoding_key, &validation) {
             Ok(_) => Ok(()),
             Err(_) => Err("Invalid or expired token".to_string()),
         }

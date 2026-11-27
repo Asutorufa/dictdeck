@@ -1,43 +1,59 @@
-/* DictDeck design tokens.
+/* DictDeck design tokens — Editorial Paper-Craft palette.
    This file is the source of truth for every UI surface, including the
    extension documents and the content-script Shadow DOM. */
 
 :root {
   color-scheme: light;
 
-  --dd-color-bg: #f8f8f6;
-  --dd-color-bg-soft: #f1f3f0;
+  --dd-color-bg: #f7f5ef;
+  --dd-color-bg-soft: #efece3;
   --dd-color-bg-raised: #ffffff;
-  --dd-color-surface: #ffffff;
+  --dd-color-surface: #fdfcf9;
   --dd-color-surface-strong: #ffffff;
-  --dd-color-surface-muted: #f0f2ef;
-  --dd-color-border: #e1e4df;
-  --dd-color-border-strong: #c9cec7;
-  --dd-color-text: #282b27;
-  --dd-color-muted: #70756f;
-  --dd-color-accent: #0f9f7b;
-  --dd-color-accent-soft: rgba(15, 159, 123, 0.1);
-  --dd-color-accent-strong: #08775d;
-  --dd-color-positive: #2f8f65;
-  --dd-color-positive-soft: rgba(47, 143, 101, 0.12);
-  --dd-color-danger: #c2414b;
-  --dd-color-danger-soft: rgba(194, 65, 75, 0.11);
-  --dd-color-warning: #a36b00;
-  --dd-color-warning-soft: rgba(163, 107, 0, 0.12);
-  --dd-shadow-sm: 0 2px 8px rgba(40, 43, 39, 0.05);
-  --dd-shadow-md: 0 12px 28px rgba(40, 43, 39, 0.1);
-  --dd-shadow-lg: 0 20px 54px rgba(40, 43, 39, 0.16);
+  --dd-color-surface-muted: #f1ede4;
+  --dd-color-border: #e5dfd3;
+  --dd-color-border-strong: #d1c9b9;
+  --dd-color-text: #1e211d;
+  --dd-color-muted: #6c6a60;
+  --dd-color-accent: #127a61;
+  --dd-color-accent-soft: rgba(18, 122, 97, 0.1);
+  --dd-color-accent-strong: #0c5d4a;
+  --dd-color-accent-fill: #127a61;
+  --dd-color-accent-fill-hover: #0c5d4a;
+  --dd-color-warm: #b5652a;
+  --dd-color-warm-soft: rgba(181, 101, 42, 0.12);
+  --dd-color-positive: #1f7a55;
+  --dd-color-positive-soft: rgba(31, 122, 85, 0.12);
+  --dd-color-danger: #c03e44;
+  --dd-color-danger-soft: rgba(192, 62, 68, 0.11);
+  --dd-color-warning: #a86214;
+  --dd-color-warning-soft: rgba(168, 98, 20, 0.12);
+
+  --dd-shadow-xs: 0 1px 2px rgba(30, 33, 29, 0.04);
+  --dd-shadow-sm:
+    0 2px 8px -2px rgba(30, 33, 29, 0.06), 0 1px 2px rgba(30, 33, 29, 0.03);
+  --dd-shadow-md:
+    0 12px 30px -8px rgba(30, 33, 29, 0.1),
+    0 2px 6px -1px rgba(30, 33, 29, 0.04);
+  --dd-shadow-lg:
+    0 24px 56px -12px rgba(30, 33, 29, 0.15),
+    0 4px 12px -2px rgba(30, 33, 29, 0.05);
+  --dd-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 
   --dd-font-sans:
-    Inter, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC",
+    "Inter", "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC",
     "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --dd-font-serif:
+    "Newsreader", "Songti SC", "Noto Serif SC", "Noto Serif JP",
+    "Hiragino Mincho ProN", Georgia, "Times New Roman", serif;
   --dd-font-mono:
     "SFMono-Regular", ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
     monospace;
 
   --dd-radius-sm: 8px;
   --dd-radius-md: 12px;
-  --dd-radius-lg: 16px;
+  --dd-radius-lg: 18px;
+  --dd-radius-xl: 22px;
   --dd-radius-pill: 999px;
   --dd-control-height: 36px;
   --dd-focus-ring: 0 0 0 3px var(--dd-color-accent-soft);
@@ -46,7 +62,7 @@
 
   /* Legacy extension aliases. Keep these until every surface is migrated. */
   --dd-enji: var(--dd-color-accent);
-  --dd-yamabuki: #b7791f;
+  --dd-yamabuki: var(--dd-color-warm);
   --dd-gofun: var(--dd-color-surface);
   --dd-sumi: var(--dd-color-text);
   --dd-nezumi: var(--dd-color-muted);
@@ -58,32 +74,39 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"]):not(.light) {
     color-scheme: dark;
 
-    --dd-color-bg: #171a18;
-    --dd-color-bg-soft: #202420;
-    --dd-color-bg-raised: #252a26;
-    --dd-color-surface: #202420;
-    --dd-color-surface-strong: #272c28;
-    --dd-color-surface-muted: #2d332e;
-    --dd-color-border: #394039;
-    --dd-color-border-strong: #4e594f;
-    --dd-color-text: #eef2ed;
-    --dd-color-muted: #a9b1a8;
-    --dd-color-accent: #28bd94;
-    --dd-color-accent-soft: rgba(40, 189, 148, 0.14);
-    --dd-color-accent-strong: #67d6b4;
-    --dd-color-positive: #83d6a9;
-    --dd-color-positive-soft: rgba(131, 214, 169, 0.14);
-    --dd-color-danger: #f28b92;
-    --dd-color-danger-soft: rgba(242, 139, 146, 0.14);
-    --dd-color-warning: #e5b75e;
-    --dd-color-warning-soft: rgba(229, 183, 94, 0.14);
-    --dd-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.16);
-    --dd-shadow-md: 0 12px 28px rgba(0, 0, 0, 0.25);
-    --dd-shadow-lg: 0 20px 54px rgba(0, 0, 0, 0.38);
-    --dd-yamabuki: #e5b75e;
+    --dd-color-bg: #131412;
+    --dd-color-bg-soft: #1a1b18;
+    --dd-color-bg-raised: #222420;
+    --dd-color-surface: #1b1d1a;
+    --dd-color-surface-strong: #232622;
+    --dd-color-surface-muted: #282b26;
+    --dd-color-border: #2e312b;
+    --dd-color-border-strong: #43473f;
+    --dd-color-text: #f0eee7;
+    --dd-color-muted: #9a988e;
+    --dd-color-accent: #34b592;
+    --dd-color-accent-soft: rgba(52, 181, 146, 0.14);
+    --dd-color-accent-strong: #67d6b7;
+    --dd-color-accent-fill: #188a6d;
+    --dd-color-accent-fill-hover: #14745b;
+    --dd-color-warm: #e29659;
+    --dd-color-warm-soft: rgba(226, 150, 89, 0.14);
+    --dd-color-positive: #74d4a2;
+    --dd-color-positive-soft: rgba(116, 212, 162, 0.14);
+    --dd-color-danger: #f0848a;
+    --dd-color-danger-soft: rgba(240, 132, 138, 0.14);
+    --dd-color-warning: #e6b45c;
+    --dd-color-warning-soft: rgba(230, 180, 92, 0.14);
+
+    --dd-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --dd-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.28);
+    --dd-shadow-md: 0 14px 32px rgba(0, 0, 0, 0.36);
+    --dd-shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5);
+    --dd-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --dd-yamabuki: var(--dd-color-warm);
   }
 }
 
@@ -91,56 +114,76 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --dd-color-bg: #171a18;
-  --dd-color-bg-soft: #202420;
-  --dd-color-bg-raised: #252a26;
-  --dd-color-surface: #202420;
-  --dd-color-surface-strong: #272c28;
-  --dd-color-surface-muted: #2d332e;
-  --dd-color-border: #394039;
-  --dd-color-border-strong: #4e594f;
-  --dd-color-text: #eef2ed;
-  --dd-color-muted: #a9b1a8;
-  --dd-color-accent: #28bd94;
-  --dd-color-accent-soft: rgba(40, 189, 148, 0.14);
-  --dd-color-accent-strong: #67d6b4;
-  --dd-color-positive: #83d6a9;
-  --dd-color-positive-soft: rgba(131, 214, 169, 0.14);
-  --dd-color-danger: #f28b92;
-  --dd-color-danger-soft: rgba(242, 139, 146, 0.14);
-  --dd-color-warning: #e5b75e;
-  --dd-color-warning-soft: rgba(229, 183, 94, 0.14);
-  --dd-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.16);
-  --dd-shadow-md: 0 12px 28px rgba(0, 0, 0, 0.25);
-  --dd-shadow-lg: 0 20px 54px rgba(0, 0, 0, 0.38);
-  --dd-yamabuki: #e5b75e;
+  --dd-color-bg: #131412;
+  --dd-color-bg-soft: #1a1b18;
+  --dd-color-bg-raised: #222420;
+  --dd-color-surface: #1b1d1a;
+  --dd-color-surface-strong: #232622;
+  --dd-color-surface-muted: #282b26;
+  --dd-color-border: #2e312b;
+  --dd-color-border-strong: #43473f;
+  --dd-color-text: #f0eee7;
+  --dd-color-muted: #9a988e;
+  --dd-color-accent: #34b592;
+  --dd-color-accent-soft: rgba(52, 181, 146, 0.14);
+  --dd-color-accent-strong: #67d6b7;
+  --dd-color-accent-fill: #188a6d;
+  --dd-color-accent-fill-hover: #14745b;
+  --dd-color-warm: #e29659;
+  --dd-color-warm-soft: rgba(226, 150, 89, 0.14);
+  --dd-color-positive: #74d4a2;
+  --dd-color-positive-soft: rgba(116, 212, 162, 0.14);
+  --dd-color-danger: #f0848a;
+  --dd-color-danger-soft: rgba(240, 132, 138, 0.14);
+  --dd-color-warning: #e6b45c;
+  --dd-color-warning-soft: rgba(230, 180, 92, 0.14);
+
+  --dd-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --dd-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.28);
+  --dd-shadow-md: 0 14px 32px rgba(0, 0, 0, 0.36);
+  --dd-shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5);
+  --dd-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --dd-yamabuki: var(--dd-color-warm);
 }
 
+:root.light,
 :root[data-theme="light"],
 [data-theme="light"] {
   color-scheme: light;
 
-  --dd-color-bg: #f8f8f6;
-  --dd-color-bg-soft: #f1f3f0;
+  --dd-color-bg: #f7f5ef;
+  --dd-color-bg-soft: #efece3;
   --dd-color-bg-raised: #ffffff;
-  --dd-color-surface: #ffffff;
+  --dd-color-surface: #fdfcf9;
   --dd-color-surface-strong: #ffffff;
-  --dd-color-surface-muted: #f0f2ef;
-  --dd-color-border: #e1e4df;
-  --dd-color-border-strong: #c9cec7;
-  --dd-color-text: #282b27;
-  --dd-color-muted: #70756f;
-  --dd-color-accent: #0f9f7b;
-  --dd-color-accent-soft: rgba(15, 159, 123, 0.1);
-  --dd-color-accent-strong: #08775d;
-  --dd-color-positive: #2f8f65;
-  --dd-color-positive-soft: rgba(47, 143, 101, 0.12);
-  --dd-color-danger: #c2414b;
-  --dd-color-danger-soft: rgba(194, 65, 75, 0.11);
-  --dd-color-warning: #a36b00;
-  --dd-color-warning-soft: rgba(163, 107, 0, 0.12);
-  --dd-shadow-sm: 0 2px 8px rgba(40, 43, 39, 0.05);
-  --dd-shadow-md: 0 12px 28px rgba(40, 43, 39, 0.1);
-  --dd-shadow-lg: 0 20px 54px rgba(40, 43, 39, 0.16);
-  --dd-yamabuki: #b7791f;
+  --dd-color-surface-muted: #f1ede4;
+  --dd-color-border: #e5dfd3;
+  --dd-color-border-strong: #d1c9b9;
+  --dd-color-text: #1e211d;
+  --dd-color-muted: #6c6a60;
+  --dd-color-accent: #127a61;
+  --dd-color-accent-soft: rgba(18, 122, 97, 0.1);
+  --dd-color-accent-strong: #0c5d4a;
+  --dd-color-accent-fill: #127a61;
+  --dd-color-accent-fill-hover: #0c5d4a;
+  --dd-color-warm: #b5652a;
+  --dd-color-warm-soft: rgba(181, 101, 42, 0.12);
+  --dd-color-positive: #1f7a55;
+  --dd-color-positive-soft: rgba(31, 122, 85, 0.12);
+  --dd-color-danger: #c03e44;
+  --dd-color-danger-soft: rgba(192, 62, 68, 0.11);
+  --dd-color-warning: #a86214;
+  --dd-color-warning-soft: rgba(168, 98, 20, 0.12);
+
+  --dd-shadow-xs: 0 1px 2px rgba(30, 33, 29, 0.04);
+  --dd-shadow-sm:
+    0 2px 8px -2px rgba(30, 33, 29, 0.06), 0 1px 2px rgba(30, 33, 29, 0.03);
+  --dd-shadow-md:
+    0 12px 30px -8px rgba(30, 33, 29, 0.1),
+    0 2px 6px -1px rgba(30, 33, 29, 0.04);
+  --dd-shadow-lg:
+    0 24px 56px -12px rgba(30, 33, 29, 0.15),
+    0 4px 12px -2px rgba(30, 33, 29, 0.05);
+  --dd-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --dd-yamabuki: var(--dd-color-warm);
 }

@@ -100,7 +100,7 @@ function styles() {
   /* Shadow DOM needs the functional :host(...) form for compound selectors;
      `:host:not(...)` / `:host.dark` silently never match. */
   const contentTokenStyles = designTokens
-    .replace(/:root:not\(([^)]*)\)/g, ":host(:not($1))")
+    .replace(/:root((?::not\([^)]*\))+)/g, ":host($1)")
     .replace(/:root(\.[\w-]+|\[[^\]]+\])/g, ":host($1)")
     .replace(/:root/g, ":host");
 
@@ -120,13 +120,13 @@ function styles() {
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border: 1px solid color-mix(in srgb, var(--dd-color-border-strong) 60%, transparent);
-      border-radius: 14px;
-      background: var(--dd-color-surface);
+      border: 1px solid color-mix(in srgb, var(--dd-color-border-strong) 72%, transparent);
+      border-radius: 16px;
+      background: var(--dd-color-surface-strong);
       box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.02),
+        var(--dd-inner-highlight),
         0 2px 6px rgba(0, 0, 0, 0.04),
-        0 18px 48px -8px rgba(0, 0, 0, 0.18);
+        0 18px 48px -8px rgba(0, 0, 0, 0.2);
       color: var(--dd-color-text);
       font-size: 13px;
       letter-spacing: 0;
@@ -225,8 +225,13 @@ function styles() {
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 8px 8px 0 14px;
+      padding: 9px 10px 6px 14px;
       flex: 0 0 auto;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--dd-color-accent-soft) 30%, var(--dd-color-surface)),
+        var(--dd-color-surface-strong)
+      );
       cursor: grab;
       user-select: none;
     }
@@ -251,9 +256,11 @@ function styles() {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: var(--dd-color-muted);
-      font-size: 12px;
+      color: var(--dd-color-text);
+      font-family: var(--dd-font-serif);
+      font-size: 14px;
       font-weight: 600;
+      letter-spacing: -0.015em;
     }
     .topbar-actions {
       display: inline-flex;
@@ -315,21 +322,24 @@ function styles() {
       margin: 0 0 12px;
       overflow: hidden;
       color: var(--dd-color-text);
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      line-height: 1.35;
+      font-family: var(--dd-font-serif);
+      font-size: 21px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
       white-space: pre-wrap;
       word-break: break-word;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 3;
     }
     .selected.is-long {
-      padding-left: 10px;
-      border-left: 2px solid var(--dd-color-accent);
-      color: var(--dd-color-muted);
-      font-size: 13px;
-      font-weight: 500;
+      padding: 6px 10px;
+      border-left: 2.5px solid var(--dd-color-warm);
+      border-radius: 0 8px 8px 0;
+      background: color-mix(in srgb, var(--dd-color-warm-soft) 45%, var(--dd-color-surface));
+      color: var(--dd-color-text);
+      font-size: 13.5px;
+      font-weight: 400;
       line-height: 1.55;
       -webkit-line-clamp: 4;
     }
@@ -553,10 +563,21 @@ function styles() {
       border-radius: 0;
       background: transparent;
     }
+    .markdown h1,
+    .markdown h2,
+    .markdown h3,
+    .markdown h4 {
+      font-family: var(--dd-font-serif);
+      font-weight: 600;
+      letter-spacing: -0.015em;
+    }
     .markdown blockquote {
-      padding: 2px 0 2px 12px;
-      border-left: 2px solid var(--dd-color-border-strong);
+      padding: 6px 12px;
+      border-left: 2.5px solid var(--dd-color-accent);
+      border-radius: 0 8px 8px 0;
+      background: var(--dd-color-surface);
       color: var(--dd-color-muted);
+      font-family: var(--dd-font-serif);
     }
     .markdown h1,
     .markdown h2,

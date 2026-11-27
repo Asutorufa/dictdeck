@@ -1,66 +1,6 @@
-import { IconButton, Slider, Flex, Text, Box } from "@radix-ui/themes";
+import { Box, Flex, IconButton, Slider, Text } from "@radix-ui/themes";
+import { Pause, Play } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-function PlayIcon({
-  size = 24,
-  width,
-  height,
-  ...props
-}: {
-  size?: number;
-  width?: number;
-  height?: number;
-}) {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      focusable="false"
-      height={size || height}
-      role="presentation"
-      viewBox="0 0 24 24"
-      width={size || width}
-      {...props}
-    >
-      <path
-        d="M5.5 5.5A2.5 2.5 0 0 1 8 3h8a2.5 2.5 0 0 1 2.5 2.5v13a2.5 2.5 0 0 1-2.5 2.5H8A2.5 2.5 0 0 1 5.5 18.5V5.5Z"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        className="hidden" // Placeholder logic, replacing with actual path below
-      />
-      <path fill="currentColor" d="M7 6v12l10-6z" />
-    </svg>
-  );
-}
-
-function PauseIcon({
-  size = 24,
-  width,
-  height,
-  ...props
-}: {
-  size?: number;
-  width?: number;
-  height?: number;
-}) {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      focusable="false"
-      height={size || height}
-      role="presentation"
-      viewBox="0 0 24 24"
-      width={size || width}
-      {...props}
-    >
-      <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-    </svg>
-  );
-}
 
 const formatTime = (time: number) => {
   if (isNaN(time)) return "00:00";
@@ -118,7 +58,7 @@ export const AudioPlayer = (props: any) => {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        void audioRef.current.play();
       }
     }
   }, [isPlaying]);
@@ -132,7 +72,6 @@ export const AudioPlayer = (props: any) => {
     }
   }, []);
 
-  // Remove controls from props to avoid default player
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unused-vars
   const { controls, className, style, ...restProps } = props;
 
@@ -140,7 +79,7 @@ export const AudioPlayer = (props: any) => {
     <Flex
       align="center"
       gap="3"
-      className={`rounded-xl p-3 w-full max-w-md border shadow-sm my-2 bg-[var(--color-panel-solid)] border-[var(--gray-a6)] ${className || ""}`}
+      className={`my-2.5 w-full max-w-md rounded-xl border border-[var(--dd-color-border)] bg-[var(--dd-color-surface)] px-3 py-2.5 shadow-[var(--dd-shadow-xs)] ${className || ""}`}
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       style={style}
     >
@@ -149,15 +88,15 @@ export const AudioPlayer = (props: any) => {
       <IconButton
         size="2"
         variant="soft"
-        color="blue"
+        color="jade"
         radius="full"
         onClick={togglePlay}
         aria-label={isPlaying ? "Pause" : "Play"}
       >
-        {isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+        {isPlaying ? <Pause size={15} /> : <Play size={15} />}
       </IconButton>
 
-      <Box className="flex-1 flex flex-col justify-center gap-1 w-full">
+      <Box className="flex w-full flex-1 flex-col justify-center gap-1">
         <Slider
           size="1"
           step={0.01}
@@ -166,7 +105,7 @@ export const AudioPlayer = (props: any) => {
           value={[isEnded ? duration : currentTime]}
           onValueChange={handleSeek}
           aria-label="Audio Progress"
-          color="blue"
+          color="jade"
         />
       </Box>
 
@@ -174,7 +113,7 @@ export const AudioPlayer = (props: any) => {
         size="1"
         weight="medium"
         color="gray"
-        className="tabular-nums min-w-[70px] text-right"
+        className="min-w-[74px] text-right font-mono tabular-nums"
       >
         {formatTime(currentTime)} / {formatTime(duration)}
       </Text>

@@ -1,9 +1,10 @@
 import { ROUTE_HOME, TOKEN_KEY } from "@/lib/constants";
+import { EASE_SILK, SPRING_SNAPPY } from "@/lib/motion";
 import { addToast } from "@/components";
-import { Button, Card, TextField, Flex, Text, Box } from "@radix-ui/themes";
+import { Flex, Text, TextField } from "@radix-ui/themes";
+import { motion } from "motion/react";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { PageContainer } from "@/ui/PageContainer";
 
 type LoginResponse = { token: string };
 
@@ -71,51 +72,66 @@ export default function Login() {
   };
 
   return (
-    <PageContainer
-      size="3xl"
-      className="app-login-page min-h-dvh flex items-center justify-center"
-    >
-      <Card size="4" className="app-login-card w-full max-w-sm">
-        <Flex direction="column" gap="4">
-          <Box className="app-login-brand pb-2">
-            <img src="/dictdeck.svg" alt="" aria-hidden="true" />
-            <div className="app-login-heading">
-              <strong>Welcome back</strong>
-              <span>Sign in to your DictDeck workspace</span>
-            </div>
-          </Box>
-          <Flex direction="column" gap="3">
-            <Flex direction="column" gap="1">
-              <Text as="label" size="2" weight="bold">
-                Username
-              </Text>
-              <TextField.Root
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                size="3"
-                variant="surface"
-              />
-            </Flex>
-            <Flex direction="column" gap="1">
-              <Text as="label" size="2" weight="bold">
-                Password
-              </Text>
-              <TextField.Root
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                size="3"
-                variant="surface"
-              />
-            </Flex>
-            <Button size="3" loading={loading} onClick={handleLogin}>
-              Sign in
-            </Button>
+    <div className="app-login-page">
+      <motion.div
+        className="app-login-card"
+        initial={{ opacity: 0, y: 14, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.36, ease: EASE_SILK }}
+      >
+        <div className="app-login-brand">
+          <motion.img
+            src="/dictdeck.svg"
+            alt=""
+            aria-hidden="true"
+            initial={{ opacity: 0, scale: 0.84 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ ...SPRING_SNAPPY, delay: 0.08 }}
+          />
+          <div>
+            <h1>Welcome back</h1>
+            <p>Sign in to your DictDeck workspace</p>
+          </div>
+        </div>
+
+        <Flex direction="column" gap="3">
+          <Flex direction="column" gap="1">
+            <Text as="label" size="2" weight="medium">
+              Username
+            </Text>
+            <TextField.Root
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void handleLogin()}
+              placeholder="Enter username"
+              size="3"
+              variant="surface"
+            />
           </Flex>
+          <Flex direction="column" gap="1">
+            <Text as="label" size="2" weight="medium">
+              Password
+            </Text>
+            <TextField.Root
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void handleLogin()}
+              placeholder="Enter password"
+              size="3"
+              variant="surface"
+            />
+          </Flex>
+          <button
+            type="button"
+            className="app-primary-action mt-2 w-full"
+            disabled={loading}
+            onClick={() => void handleLogin()}
+          >
+            {loading ? <span className="app-loading-dot" /> : "Sign in"}
+          </button>
         </Flex>
-      </Card>
-    </PageContainer>
+      </motion.div>
+    </div>
   );
 }
